@@ -11,18 +11,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Authentication Entity
- *
- * @Entity Marks the class as an object to be serialised and stored in a database
- * @NoArgsConstructor Tells lombok to generate a class constructor with no parameters when compiled
- * @Getter Tells lombok to generate Getter functions for all variables within the class
- * @Setter Tells lombok to generate Setter function for all variables within the class
- *
- * This is the entity class for authentication data, this is the main entity that all other
- * entities link back to as shown earlier in our database diagrams
- *
- */
 @Entity @Getter @Setter @NoArgsConstructor
 public class Token {
 
@@ -52,8 +40,12 @@ public class Token {
         this.ipAddress = ipAddress;
     }
 
+    /**
+     * Checks if the current token has expired
+     * @return true if expired, false if not.
+     */
     public boolean isExpired() {
-        return Duration.between(LocalDateTime.now(), generatedTime).toDays() > 30;
+        return generatedTime.plusDays(30).isBefore(LocalDateTime.now());
     }
 
 }
