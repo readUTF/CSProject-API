@@ -1,4 +1,4 @@
-package com.connor.csprojectapi.card;
+package com.connor.csprojectapi.data;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

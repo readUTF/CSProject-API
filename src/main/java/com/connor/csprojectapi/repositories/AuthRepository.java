@@ -1,10 +1,11 @@
-package com.connor.csprojectapi.auth;
+package com.connor.csprojectapi.repositories;
 
+import com.connor.csprojectapi.data.Authentication;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface AuthRepo extends JpaRepository<Authentication, Long> {
+public interface AuthRepository extends JpaRepository<Authentication, Long> {
 
     /**
      * Returns an Authentication Optional for the

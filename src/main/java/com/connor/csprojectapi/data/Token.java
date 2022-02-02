@@ -1,4 +1,4 @@
-package com.connor.csprojectapi.tokens;
+package com.connor.csprojectapi.data;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

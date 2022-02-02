@@ -1,4 +1,4 @@
-package com.connor.csprojectapi.auth;
+package com.connor.csprojectapi.data;
 
 
 import lombok.NoArgsConstructor;
