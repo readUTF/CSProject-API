@@ -1,116 +1,107 @@
 package com.connor.csprojectapi.api;
 
 import com.connor.csprojectapi.data.Authentication;
+import com.connor.csprojectapi.data.Profile;
+import com.connor.csprojectapi.data.Token;
 import com.connor.csprojectapi.repositories.AuthRepository;
 import com.connor.csprojectapi.repositories.ProfileRepository;
 import com.connor.csprojectapi.repositories.TokenRepository;
-import com.connor.csprojectapi.utils.exceptions.WebException;
+import com.connor.csprojectapi.utils.HashMapBuilder;
+import com.github.javafaker.Faker;
+import com.google.common.hash.Hashing;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.UUID;
 
-@RestController
+@RestController("/api/authentication")
 @AllArgsConstructor
 public class AuthWeb {
 
-    private static final String MAIL_REGEX = "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])";
-
+    private static final Faker FAKER = Faker.instance();
 
     private TokenRepository tokenRepo;
     private AuthRepository authRepo;
     private ProfileRepository profileRepo;
 
-    @GetMapping("/authentication/create")
-    public HashMap<String, Object> createAccount(String email, String password) {
+    //Marks the method as handling HTTP GET requests
+    @GetMapping("create")
+    //Define the paramaters needed
+    public ResponseEntity<?> createAccount(String email, String password) {
 
-        //
-        if (!email.matches(MAIL_REGEX)) {
-            throw new WebException("invalid_email", email);
-        }
-
+        //Check within the database if an entity exists with the email provided
         if (authRepo.existsAuthenticationByEmail(email)) {
-            throw new WebException("email_exists", email);
+            //Respond with a BAD_REQUEST response and the text 'Account exists;
+            return new ResponseEntity<>("Account exists", HttpStatus.BAD_REQUEST);
         }
-        if (!isSecurePassword(password)) {
-            throw new WebException("insecure_password", "N/A");
-        }
+        //Uses the library 'Faker' to generate a random username
+        String username = FAKER.superhero().prefix() +
+                FAKER.name().firstName() + FAKER.address().buildingNumber();
 
-        Faker faker = ProjectAPI.getFaker();
+        //Uses SHA256 to hash the users password for secure storage
+        String hashedPassword = Hashing.sha256().hashString(password, StandardCharsets.UTF_8).toString();
 
-        Authentication auth = authRepo.save(new Authentication(email, ProjectAPI.getPasswordHashing().generateHash(password)));
-        Profile profile = profileRepo.save(new Profile(auth.getId(), faker.superhero().prefix() + faker.name().firstName() + faker.address().buildingNumber(), LocalDateTime.now(), 0, 0));
-        Token token = tokenRepo.save(new Token(auth.getId(), UUID.randomUUID(), LocalDateTime.now(), ""));
-        return new HashMapBuilder<String, Object>()
+        //Create a new authentication entity and save it to the authentication table
+        Authentication auth = authRepo.save(new Authentication(email, hashedPassword));
+
+        //Create a new profile entity and save it to the
+        Profile profile = profileRepo.save(
+                new Profile(auth.getId(), username, LocalDateTime.now(), 0, 0));
+
+        //Create a new token entity and save it to the database
+        Token token = tokenRepo.save(new Token(
+                auth.getId(), UUID.randomUUID(), LocalDateTime.now(), ""));
+
+        //Construct a map of values to be turned into a json object and return
+        HashMap<String, Object> data = new HashMapBuilder<String, Object>()
                 .add("token", token.getToken().toString())
                 .add("profile_id", profile.getId())
                 .add("token_expiry", token.getGeneratedTime().plusDays(30))
                 .build();
+        return new ResponseEntity<>(data, HttpStatus.CREATED); //Respond with the id's of all entities created
     }
 
     /**
-     * @param identifier
-     * @param password
-     * @return
+     * @param email    - Account email
+     * @param password - Account password
+     * @return Token, profile id and token expiry date
      */
-//    @GetMapping("/authentication/login")
-//    public HashMap<String, Object> login(String identifier, String password) {
-//        Authentication authentication;
-//        Optional<Authentication> authenticationByEmail = authRepo.getAuthenticationByEmail(identifier);
-//        if (authenticationByEmail.isEmpty()) {
-//            Optional<Profile> profileByUsername = profileRepo.getProfileByUsername(identifier);
-//            if (profileByUsername.isEmpty()) {
-//                return new HashMapBuilder<String, Object>().add("not_found", identifier).build();
-//            }
-////            authentication = profileByUsername.get().getLinkedAuthentication(authRepo);
-//        } else {
-//            authentication = authenticationByEmail.get();
-//        }
-////        if(!ProjectAPI.getPasswordHashing().isValidPassword(password, authentication.getPassword())) {
-////            return new HashMapBuilder<String, Object>().add("password_mismatch", password).build();
-////        }
-////        Token token = tokenRepo.save(new Token(authentication.getId(), UUID.randomUUID(), LocalDateTime.now(), ""));
-////        Profile profile = profileRepo.getProfileByAuthId(authentication.getId());
-////        return new HashMapBuilder<String, Object>()
-////                .add("token", token.getToken())
-////                .add("profile_id", profile.getId())
-////                .add("token_expiry", token.getGeneratedTime().plusDays(30))
-////                .build();
-//        return null;
-//    }
+    @GetMapping("/authentication/login")
+    //Define the api request to take 2 strings (email and password) as an input
+    public ResponseEntity<?> login(String email, String password) {
+        //Find an existing account using the provided email
+        Authentication authentication = authRepo.findAuthenticationByEmail(email).orElse(null);
 
-    private static final String SECURE_PASSWORD_REGEX = "(?=^.{8,}$)(?=.*\\d)(?=.*[!@#$%^&*]+)(?![.\\n])(?=.*[A-Z])(?=.*[a-z]).*$";
+        //If not account is found then respond with Email not found and BAD_REQUEST response
+        if(authentication == null) return new ResponseEntity<>("Email not found", HttpStatus.BAD_REQUEST);
 
-    /**
-     * Checks if specific string matches a regex which checks for the following characteristics.
-     * <p>
-     * (?=^.{8,}$)               Ensure string is of length 8.
-     * (?=.*\d)                  Ensure that there is at least 1 digit
-     * (?=.*[!@#$%^&*]+)         Ensure that there is a special character
-     * (?![.\n])                 Ensure there is no line breaks or .
-     * (?=.*[A-Z])               Ensure that there is a capital letter
-     * (?=.*[a-z])               Ensure that there is a lowercase letter
-     *
-     * @param password Password being checked
-     * @return True if password is secure, false if password is insecure
-     */
-    public boolean isSecurePassword(String password) {
-        return password.matches(SECURE_PASSWORD_REGEX);
+        //Hash the provided password, check if it matches the password stored within the found profile
+        if(!Hashing.sha256().hashString(password, StandardCharsets.UTF_8).toString().equalsIgnoreCase(authentication.getPassword())) {
+            //Password does not match, respond accordingly with BAD_REQUEST & "Invalid Password"
+            return new ResponseEntity<>("Invalid Password", HttpStatus.BAD_REQUEST);
+        }
+
+        //Generate token linking the users' login attempt and the authentication entity
+        Token token = tokenRepo.save(new Token(authentication.getId(), UUID.randomUUID(), LocalDateTime.now(), ""));
+
+        //Find user profile from the authentication profile
+        Profile profile = profileRepo.getProfileByAuthId(authentication.getId());
+
+        //Respond with token, profileID and the expiration of the token
+        HashMap<String, Object> responseData = new HashMapBuilder<String, Object>()
+                .add("token", token.getToken())
+                .add("profile_id", profile.getId())
+                .add("token_expiry", token.getGeneratedTime().plusDays(30))
+                .build();
+        return new ResponseEntity<>(responseData, HttpStatus.OK);
     }
 
 
-    /**
-     * The regex used here can be found at https://emailregex.com/ as well
-     * as an accompanying diagram that breaks down how it works
-     *
-     * @param email - Email being validated
-     * @return If email is valid
-     */
-    public boolean isValidEmail(String email) {
-        return email.matches(MAIL_REGEX);
-    }
 
 }

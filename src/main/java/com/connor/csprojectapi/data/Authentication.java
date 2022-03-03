@@ -1,6 +1,7 @@
 package com.connor.csprojectapi.data;
 
 
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
@@ -15,7 +16,7 @@ import javax.persistence.*;
  * entities link back to as shown earlier in our database diagrams
  *
  */
-@Entity @NoArgsConstructor
+@Entity @NoArgsConstructor @Getter
 public class Authentication {
 
     /**

@@ -28,9 +28,9 @@ public class RevisionSet {
      * @param name    - Name of the set
      * @param ownerId - The owner of the cards database id (foreign key)
      */
-    public RevisionSet(String name, long ownerId) {
+    public RevisionSet(String name, long ownerId, boolean privateSet) {
         this.name = name;
         this.ownerId = ownerId;
-        this.privateSet = false;
+        this.privateSet = privateSet;
     }
 }

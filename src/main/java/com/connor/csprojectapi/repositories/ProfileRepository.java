@@ -9,10 +9,9 @@ import java.util.Optional;
 
 public interface ProfileRepository extends JpaRepository<Profile, Long> {
 
-    @Override @Nullable
-    Profile getById(Long aLong);
     boolean existsProfileByUsername(String username);
-    Optional<Profile> getProfileByUsername(String username);
+    Optional<Profile> findProfileByUsername(String username);
     Profile getProfileByAuthId(long authId);
+    Optional<Profile> findProfileById(long id);
 
 }

@@ -1,5 +1,6 @@
 package com.connor.csprojectapi.data;
 
+import com.connor.csprojectapi.repositories.AuthRepository;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,7 +28,7 @@ public class Profile {
     long revisionTime;
 
     @ElementCollection
-    List<Long> savedRevisionCards;
+    List<Long> savedSets;
 
     /**
      * The profile class stores personalised user data instead of data
@@ -47,10 +48,11 @@ public class Profile {
         this.revisionTime = revisionTime;
     }
 
+
+    public Authentication getLinkedAuthentication(AuthRepository authenticationRepository) {
+        return authenticationRepository.getById(authId);
+    }
 }
-//    public Authentication getLinkedAuthentication(AuthenticationRepository authenticationRepository) {
-//        return authenticationRepository.getById(authId);
-//    }
 //
 //    public List<Long> getSavedRevisionCards() {
 //        return savedRevisionCards == null ? savedRevisionCards = new ArrayList<>() : savedRevisionCards;
