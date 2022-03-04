@@ -18,7 +18,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 @AllArgsConstructor
-@RestController("/api/profile/")
+@RestController
+@RequestMapping("/api/profile/")
 public class ProfileAPI {
 
     ProfileRepository profileRepo;
@@ -26,9 +27,10 @@ public class ProfileAPI {
     RevisionSetRepository setRepo;
     RevisionCardRepository cardRepo;
 
+
     //Marks API end point for /api/profile/profile
     @GetMapping("profile")
-    public ResponseEntity<?> getProfile(UUID token, long profileId) {
+    public ResponseEntity<?> getProfile(@RequestParam("token") UUID token, long profileId) {
         //find profile by provided id
         Optional<Profile> profileById = profileRepo.findProfileById(profileId);
         //check if profile is not found
@@ -39,7 +41,7 @@ public class ProfileAPI {
         //value is presented so can now be cast directly to Profile
         Profile profile = profileById.get();
         //check if token provided is a valid authentication token for this profile
-        if (!isValidToken(token, profile)) return new ResponseEntity<>("Invalid Auth", HttpStatus.BAD_REQUEST);
+        if (!isTokenValid(token, profile)) return new ResponseEntity<>("Invalid Auth", HttpStatus.BAD_REQUEST);
         //profile is found, auth is valid, return profile
         return new ResponseEntity<>(profile, HttpStatus.OK);
     }
@@ -56,7 +58,7 @@ public class ProfileAPI {
 
         //value is presented so can be resolved
         Profile profile = profileById.get();
-        if (!isValidToken(token, profile)) return new ResponseEntity<>("Invalid Auth", HttpStatus.BAD_REQUEST);
+        if (!isTokenValid(token, profile)) return new ResponseEntity<>("Invalid Auth", HttpStatus.BAD_REQUEST);
         List<RevisionSet> sets = setRepo.getRevisionSetsByOwnerId(profileId);
         return new ResponseEntity<>(sets, HttpStatus.OK);
     }
@@ -68,7 +70,7 @@ public class ProfileAPI {
             return new ResponseEntity<>("Profile not found", HttpStatus.BAD_REQUEST);
         }
         Profile profile = profileById.get();
-        if (!isValidToken(token, profile)) return new ResponseEntity<>("Invalid Auth", HttpStatus.BAD_REQUEST);
+        if (!isTokenValid(token, profile)) return new ResponseEntity<>("Invalid Auth", HttpStatus.BAD_REQUEST);
         RevisionSet save = setRepo.save(new RevisionSet(name, profileId, true));
         profile.getSavedSets().add(save.getId());
         return new ResponseEntity<>(save, HttpStatus.OK);
@@ -82,7 +84,7 @@ public class ProfileAPI {
         }
         Profile profile = profileById.get();
         Optional<RevisionSet> optionalRevisionSet = setRepo.findByIdAndOwnerId(setId, profileId);
-        if (!isValidToken(token, profile)) return new ResponseEntity<>("Invalid Auth", HttpStatus.BAD_REQUEST);
+        if (!isTokenValid(token, profile)) return new ResponseEntity<>("Invalid Auth", HttpStatus.BAD_REQUEST);
         if(optionalRevisionSet.isEmpty()) return new ResponseEntity<>("No set found", HttpStatus.OK);
         setRepo.delete(optionalRevisionSet.get());
         return new ResponseEntity<>("Deleted", HttpStatus.OK);
@@ -95,7 +97,7 @@ public class ProfileAPI {
             return new ResponseEntity<>("Profile not found", HttpStatus.BAD_REQUEST);
         }
         Profile profile = profileById.get();
-        if (!isValidToken(token, profile)) return new ResponseEntity<>("Invalid Auth", HttpStatus.BAD_REQUEST);
+        if (!isTokenValid(token, profile)) return new ResponseEntity<>("Invalid Auth", HttpStatus.BAD_REQUEST);
         List<RevisionCard> allBySetId = cardRepo.getAllBySetId(setId);
         return new ResponseEntity<>(allBySetId, HttpStatus.OK);
     }
@@ -107,7 +109,7 @@ public class ProfileAPI {
             return new ResponseEntity<>("Profile not found", HttpStatus.BAD_REQUEST);
         }
         Profile profile = profileById.get();
-        if (!isValidToken(token, profile)) return new ResponseEntity<>("Invalid Auth", HttpStatus.BAD_REQUEST);
+        if (!isTokenValid(token, profile)) return new ResponseEntity<>("Invalid Auth", HttpStatus.BAD_REQUEST);
         if(!setRepo.existsByIdAndAndOwnerId(setId, profileId))
             return new ResponseEntity<>("Set not found", HttpStatus.BAD_REQUEST);
         RevisionCard save = cardRepo.save(new RevisionCard(setId, key, desc));
@@ -116,7 +118,13 @@ public class ProfileAPI {
 
 
 
-    public boolean isValidToken(UUID token, Profile profile) {
+    /**
+     * Checks if authentication token is valid for a specific profile
+     * @param token - Authentication token
+     * @param profile - Profile being checked
+     * @return True if authentication is valid, otherwise false.
+     */
+    public boolean isTokenValid(UUID token, Profile profile) {
         Optional<Token> byToken = tokenRepo.findByToken(token);
         return byToken.isPresent() && byToken.get().getAuthId() == profile.getAuthId();
     }

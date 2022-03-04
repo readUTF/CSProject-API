@@ -13,6 +13,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.nio.charset.StandardCharsets;
@@ -20,8 +21,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.UUID;
 
-@RestController("/api/authentication")
-@AllArgsConstructor
+@RestController
+@RequestMapping("/api/authentication/")
 public class AuthWeb {
 
     private static final Faker FAKER = Faker.instance();
@@ -30,9 +31,15 @@ public class AuthWeb {
     private AuthRepository authRepo;
     private ProfileRepository profileRepo;
 
+    public AuthWeb(TokenRepository tokenRepo, AuthRepository authRepo, ProfileRepository profileRepo) {
+        this.tokenRepo = tokenRepo;
+        this.authRepo = authRepo;
+        this.profileRepo = profileRepo;
+        System.out.println("test");
+    }
+
     //Marks the method as handling HTTP GET requests
     @GetMapping("create")
-    //Define the paramaters needed
     public ResponseEntity<?> createAccount(String email, String password) {
 
         //Check within the database if an entity exists with the email provided
@@ -72,7 +79,7 @@ public class AuthWeb {
      * @param password - Account password
      * @return Token, profile id and token expiry date
      */
-    @GetMapping("/authentication/login")
+    @GetMapping("login")
     //Define the api request to take 2 strings (email and password) as an input
     public ResponseEntity<?> login(String email, String password) {
         //Find an existing account using the provided email

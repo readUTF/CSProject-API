@@ -1,0 +1,3 @@
+2022-03-03 18:01:29 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "AUTHENTICATION" not found; SQL statement:
+select authentica0_.id as col_0_0_ from authentication authentica0_ where authentica0_.email=? limit ? [42102-200]
