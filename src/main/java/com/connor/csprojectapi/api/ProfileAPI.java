@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -64,7 +65,7 @@ public class ProfileAPI {
     }
 
     @PutMapping("set")
-    public ResponseEntity<?> createSet(@RequestParam("uuid") UUID token, long profileId, String name) {
+    public ResponseEntity<?> createSet(@RequestParam("token") UUID token, long profileId, String name) {
         Optional<Profile> profileById = profileRepo.findProfileById(profileId);
         if(profileById.isEmpty()) {
             return new ResponseEntity<>("Profile not found", HttpStatus.BAD_REQUEST);
@@ -77,7 +78,7 @@ public class ProfileAPI {
     }
 
     @DeleteMapping("set")
-    public ResponseEntity<?> deleteSet(@RequestParam("uuid") UUID token, long profileId, long setId) {
+    public ResponseEntity<?> deleteSet(@RequestParam("token") UUID token, long profileId, long setId) {
         Optional<Profile> profileById = profileRepo.findProfileById(profileId);
         if(profileById.isEmpty()) {
             return new ResponseEntity<>("Profile not found", HttpStatus.BAD_REQUEST);
@@ -91,7 +92,7 @@ public class ProfileAPI {
     }
 
     @GetMapping("/set/cards")
-    public ResponseEntity<?> getCard(UUID token, long profileId, long setId) {
+    public ResponseEntity<?> getCard(@RequestParam("token") UUID token, long profileId, long setId) {
         Optional<Profile> profileById = profileRepo.findProfileById(profileId);
         if(profileById.isEmpty()) {
             return new ResponseEntity<>("Profile not found", HttpStatus.BAD_REQUEST);
@@ -103,7 +104,7 @@ public class ProfileAPI {
     }
 
     @PutMapping("/set/card")
-    public ResponseEntity<?> addCard(UUID token, long profileId, long setId, String key, String desc) {
+    public ResponseEntity<?> addCard(@RequestParam("token") UUID token, long profileId, long setId, String keyWord, String description) {
         Optional<Profile> profileById = profileRepo.findProfileById(profileId);
         if(profileById.isEmpty()) {
             return new ResponseEntity<>("Profile not found", HttpStatus.BAD_REQUEST);
@@ -112,10 +113,22 @@ public class ProfileAPI {
         if (!isTokenValid(token, profile)) return new ResponseEntity<>("Invalid Auth", HttpStatus.BAD_REQUEST);
         if(!setRepo.existsByIdAndAndOwnerId(setId, profileId))
             return new ResponseEntity<>("Set not found", HttpStatus.BAD_REQUEST);
-        RevisionCard save = cardRepo.save(new RevisionCard(setId, key, desc));
+        RevisionCard save = cardRepo.save(new RevisionCard(setId, keyWord, description));
         return new ResponseEntity<>(save, HttpStatus.OK);
     }
 
+    @DeleteMapping("/set/card")
+    public ResponseEntity<Object> removeCard(@RequestParam("token") UUID token, long profileId, long setId, int cardId) {
+        Optional<Profile> profileById = profileRepo.findProfileById(profileId);
+        if(profileById.isEmpty()) {
+            return new ResponseEntity<>("Profile not found", HttpStatus.BAD_REQUEST);
+        }
+        Profile profile = profileById.get();
+        if (!isTokenValid(token, profile)) return new ResponseEntity<>("Invalid Auth", HttpStatus.BAD_REQUEST);
+        if(!cardRepo.existsBySetIdAndId(setId, cardId)) return new ResponseEntity<>("Invalid Card", HttpStatus.BAD_REQUEST);
+        cardRepo.deleteBySetIdAndId(setId, cardId);
+        return new ResponseEntity<>(Collections.emptyMap(), HttpStatus.OK);
+    }
 
 
     /**

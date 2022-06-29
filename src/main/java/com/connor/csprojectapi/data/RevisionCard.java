@@ -20,7 +20,7 @@ public class RevisionCard {
     long id;
     long setId;
 
-    String keyWord;
+    String keyword;
     String description;
     int fails;
     int successes;
@@ -31,15 +31,14 @@ public class RevisionCard {
      * Fails and successes are set at 0 on creation as they update over time
      *
      * @param setId       - Foreign key linking the current card to the set it's contained in
-     * @param keyWord     - The keyword for the revision card, decided by the user
-     * @param description - The description (back of card), decided by the user
+     * @param description
      */
-    public RevisionCard(long setId, String keyWord, String description) {
+    public RevisionCard(long setId, String keyword, String description) {
         this.setId = setId;
-        this.keyWord = keyWord;
         this.description = description;
         this.fails = 0;
         this.successes = 0;
+        this.keyword = keyword;
 
     }
 }
